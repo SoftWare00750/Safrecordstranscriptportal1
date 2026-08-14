@@ -37,7 +37,7 @@ extra CORS setup is needed in dev.
 ## Demo logins
 
 - **Student:** enter one of the sample IDs shown on the login screen
-  (`STU-1001`, `STU-1002`, `STU-1003`).
+  (`STU-1` through `STU-50`).
 - **Records Office (admin):** passcode `REGISTRAR`.
 
 ## Feature tour

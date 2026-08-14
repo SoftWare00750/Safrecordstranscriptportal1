@@ -73,7 +73,7 @@ export default function Landing() {
                 <input
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
-                  placeholder="e.g. STU-1001"
+                  placeholder="e.g. STU-1"
                   className="mt-1.5 w-full rounded border border-ledger-line bg-paper px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brass/50"
                 />
               </label>

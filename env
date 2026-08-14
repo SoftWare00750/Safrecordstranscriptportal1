@@ -1,0 +1,9 @@
+# Local dev values — this file is gitignored and never committed.
+# See .env.example for what each variable does.
+
+VITE_SUPABASE_URL=https://zpbzyejalapmnoovsgqs.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_RxMHqu1F9o0bLbiFxpEPKA_IOLenMeW
+
+# Leave unset for local dev (Vite proxies /api to localhost:4000). Set this
+# in production if the frontend and backend are on different domains.
+VITE_API_BASE_URL=

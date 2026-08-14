@@ -4,6 +4,7 @@
 VITE_SUPABASE_URL=https://zpbzyejalapmnoovsgqs.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_RxMHqu1F9o0bLbiFxpEPKA_IOLenMeW
 
-# Leave unset for local dev (Vite proxies /api to localhost:4000). Set this
-# in production if the frontend and backend are on different domains.
-VITE_API_BASE_URL=
+# Backend is now a Supabase Edge Function (see /supabase/functions/api),
+# not the old Express server on :4000 — set this in every environment
+# (local dev included), there is no more dev proxy to fall back to.
+VITE_API_BASE_URL=https://zpbzyejalapmnoovsgqs.supabase.co/functions/v1/api

@@ -9,9 +9,25 @@ import axios from 'axios'
 // local dev and same-origin deployments.
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
 
+// The backend is a Supabase Edge Function. Supabase's gateway sits in front
+// of every Edge Function and can require a valid project API key on the
+// request before it ever reaches the function's own code — independent of
+// the function's `withSupabase({ auth: 'none' })` route-level check (see the
+// warning comment at the top of backend/supabase/functions/api/index.ts).
+// Without this header, a deployment where that gateway-level check is
+// enforced returns a bare 401 with no JSON body, which the frontend can't
+// tell apart from "the server is unreachable" (see describeStudentLookupError
+// in AuthContext.jsx). supabase-js sends this same header automatically for
+// every other Supabase service (PostgREST, Storage, Realtime) — doing it
+// here too is safe and doesn't require any backend change.
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
 const api = axios.create({
   baseURL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    ...(supabaseKey ? { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } : {}),
+  },
   timeout: 15000,
 })
 

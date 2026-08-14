@@ -10,6 +10,33 @@ const ADMIN_STORAGE_KEY = 'safrecords-admin'
 // their profile record in the Express backend (fullName, program). The
 // studentId is stored on the Supabase user at sign-up time (user_metadata)
 // so we always know which backend record to enrich with.
+// Distinguishes "the backend told us this ID doesn't exist" (a genuine 404
+// from our Express API) from "we couldn't even reach the backend" (network
+// error, wrong/missing VITE_API_BASE_URL, CORS, 5xx, timeout). This matters
+// because a misconfigured API base URL in production makes '/api/students/...'
+// hit the frontend's own domain instead of the backend — and most static
+// hosts (Vercel included) return their own 404 page for that unmatched
+// route, which is ALSO technically a 404. So status===404 alone isn't
+// enough: we additionally check that the response actually came from our
+// API (JSON body shaped like { error: "..." }), not a platform 404 page.
+// Getting this wrong was the original bug: every kind of failure — including
+// the backend being completely unreachable — was reported as "no student
+// record matches that ID", which is misleading and sent people chasing a
+// data problem that didn't exist.
+function describeStudentLookupError(err, studentId) {
+  const res = err?.response
+  const isGenuineApiNotFound =
+    res?.status === 404 &&
+    typeof res.data === 'object' &&
+    res.data !== null &&
+    typeof res.data.error === 'string'
+
+  if (isGenuineApiNotFound) {
+    return `No student record matches ID "${studentId}". Check the ID and try again.`
+  }
+  return "Couldn't reach the records server to verify that Student ID. Check your connection and try again in a moment."
+}
+
 async function buildStudentUser(supabaseUser) {
   const studentId = supabaseUser?.user_metadata?.studentId
   if (!studentId) {
@@ -17,7 +44,12 @@ async function buildStudentUser(supabaseUser) {
       'This account has no Student ID on file. Contact the Records Office to link your account.'
     )
   }
-  const profile = await fetchStudentById(studentId)
+  let profile
+  try {
+    profile = await fetchStudentById(studentId)
+  } catch (err) {
+    throw new Error(describeStudentLookupError(err, studentId))
+  }
   return {
     role: 'student',
     studentId: profile.studentId,
@@ -83,8 +115,8 @@ export function AuthProvider({ children }) {
     let profile
     try {
       profile = await fetchStudentById(trimmedId)
-    } catch {
-      throw new Error(`No student record matches ID "${trimmedId}". Check the ID and try again.`)
+    } catch (err) {
+      throw new Error(describeStudentLookupError(err, trimmedId))
     }
 
     const { data, error } = await supabase.auth.signUp({

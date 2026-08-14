@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { fetchStudentById } from '../api/client'
+import { fetchStudentById, updateStudent } from '../api/client'
 
 const AuthContext = createContext(null)
 
@@ -122,7 +122,19 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { studentId: profile.studentId } },
+      options: {
+        data: { studentId: profile.studentId },
+        // Where the "confirm your email" link sends the browser. Landing()
+        // watches auth state and auto-redirects into /student once
+        // supabase-js picks up the session from the URL (detectSessionInUrl
+        // is already on in lib/supabaseClient.js), so landing here signs
+        // the student straight into the app instead of just showing a
+        // "confirmed" page. This URL must also be added to the project's
+        // Redirect URLs allow-list in the Supabase Dashboard
+        // (Authentication → URL Configuration) or Supabase will reject it
+        // and fall back to the default Site URL instead.
+        emailRedirectTo: `${window.location.origin}/`,
+      },
     })
     if (error) throw new Error(error.message)
 
@@ -143,6 +155,17 @@ export function AuthProvider({ children }) {
     setStudentUser(await buildStudentUser(data.user))
   }
 
+  // Lets a signed-in student edit their own profile (currently: full name).
+  // Updates the backend record, then patches local state directly instead
+  // of re-fetching, so the change reflects immediately without waiting on
+  // a network round trip.
+  const updateStudentProfile = async (patch) => {
+    if (!studentUser) throw new Error('Not signed in as a student.')
+    const updated = await updateStudent(studentUser.studentId, patch)
+    setStudentUser((prev) => ({ ...prev, fullName: updated.fullName, program: updated.program }))
+    return updated
+  }
+
   // ---- Admin: unchanged passcode-based demo login ----
   const loginAsAdmin = (name) => setAdminUser({ role: 'admin', name, staffId: 'REG-STAFF' })
 
@@ -156,7 +179,15 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, authLoading, signUpStudent, signInStudent, loginAsAdmin, logout }}
+      value={{
+        user,
+        authLoading,
+        signUpStudent,
+        signInStudent,
+        updateStudentProfile,
+        loginAsAdmin,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

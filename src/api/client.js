@@ -34,6 +34,9 @@ export const fetchStudents = () => api.get('/students').then((r) => r.data)
 export const fetchStudentById = (studentId) =>
   api.get(`/students/${studentId}`).then((r) => r.data)
 
+export const updateStudent = (studentId, payload) =>
+  api.patch(`/students/${studentId}`, payload).then((r) => r.data)
+
 // ---- Reason-for-status explainer ----
 export const explainStatus = (id) =>
   api.get(`/explain/${id}`).then((r) => r.data)

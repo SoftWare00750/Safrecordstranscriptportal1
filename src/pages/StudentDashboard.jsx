@@ -8,13 +8,42 @@ import { createRequest, fetchRequests } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 export default function StudentDashboard() {
-  const { user } = useAuth()
+  const { user, updateStudentProfile } = useAuth()
   const [tab, setTab] = useState('new')
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [pendingSubmission, setPendingSubmission] = useState(null)
   const [justSubmitted, setJustSubmitted] = useState(false)
+
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [nameDraft, setNameDraft] = useState(user.fullName)
+  const [profileError, setProfileError] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+
+  const openEditProfile = () => {
+    setNameDraft(user.fullName)
+    setProfileError('')
+    setEditingProfile(true)
+  }
+
+  const saveProfile = async () => {
+    const trimmed = nameDraft.trim()
+    if (!trimmed) {
+      setProfileError('Name cannot be empty.')
+      return
+    }
+    setSavingProfile(true)
+    setProfileError('')
+    try {
+      await updateStudentProfile({ fullName: trimmed })
+      setEditingProfile(false)
+    } catch (err) {
+      setProfileError(err.message || 'Could not save your changes. Please try again.')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
 
   const load = () => {
     setLoading(true)
@@ -55,7 +84,15 @@ export default function StudentDashboard() {
     <div className="min-h-screen">
       <NavBar />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="font-display text-2xl font-semibold text-ink mb-1">Student dashboard</h1>
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h1 className="font-display text-2xl font-semibold text-ink">Student dashboard</h1>
+          <button
+            onClick={openEditProfile}
+            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded border border-ledger-line text-slate hover:text-ink hover:border-ink/40 transition-colors"
+          >
+            Edit profile
+          </button>
+        </div>
         <p className="text-sm text-slate mb-6">
           Submit new transcript requests and track their review status.
         </p>
@@ -98,6 +135,24 @@ export default function StudentDashboard() {
           )}
         </div>
       </main>
+
+      <Modal
+        open={editingProfile}
+        title="Edit profile"
+        onCancel={() => setEditingProfile(false)}
+        onConfirm={saveProfile}
+        confirmLabel={savingProfile ? 'Saving…' : 'Save changes'}
+      >
+        <label className="block text-left">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate">Full name</span>
+          <input
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            className="mt-1.5 w-full rounded border border-ledger-line bg-paper px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brass/50"
+          />
+        </label>
+        {profileError && <p className="text-xs text-seal mt-2">{profileError}</p>}
+      </Modal>
 
       <Modal
         open={!!pendingSubmission}

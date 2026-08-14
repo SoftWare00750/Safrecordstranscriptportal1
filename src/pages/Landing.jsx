@@ -1,14 +1,26 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Landing() {
   const [tab, setTab] = useState('student')
-  const { loginAsAdmin } = useAuth()
+  const { loginAsAdmin, user, authLoading } = useAuth()
   const navigate = useNavigate()
 
   const [passcode, setPasscode] = useState('')
   const [adminError, setAdminError] = useState('')
+
+  // Handles the email-confirmation redirect: the link sends the browser
+  // back to '/' with a session token in the URL. supabase-js picks that up
+  // automatically (detectSessionInUrl), which fires onAuthStateChange and
+  // populates `user` here — at that point we're already signed in, so send
+  // the student straight into the dashboard instead of leaving them on the
+  // login screen.
+  useEffect(() => {
+    if (!authLoading && user?.role === 'student') {
+      navigate('/student', { replace: true })
+    }
+  }, [authLoading, user, navigate])
 
   const handleAdminLogin = (e) => {
     e.preventDefault()

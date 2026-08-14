@@ -37,6 +37,10 @@ export const fetchStudentById = (studentId) =>
 export const updateStudent = (studentId, payload) =>
   api.patch(`/students/${studentId}`, payload).then((r) => r.data)
 
+// ---- Academic results (course grades, for the transcript PDF) ----
+export const fetchStudentResults = (studentId) =>
+  api.get(`/students/${studentId}/results`).then((r) => r.data)
+
 // ---- Reason-for-status explainer ----
 export const explainStatus = (id) =>
   api.get(`/explain/${id}`).then((r) => r.data)

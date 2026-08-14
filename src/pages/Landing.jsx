@@ -6,18 +6,34 @@ import { useAuth } from '../context/AuthContext'
 export default function Landing() {
   const [tab, setTab] = useState('student')
   const [students, setStudents] = useState([])
+  const [studentsLoading, setStudentsLoading] = useState(true)
+  const [studentsError, setStudentsError] = useState('')
   const [studentId, setStudentId] = useState('')
   const [passcode, setPasscode] = useState('')
   const [error, setError] = useState('')
   const { loginAsStudent, loginAsAdmin } = useAuth()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    fetchStudents().then(setStudents).catch(() => setStudents([]))
-  }, [])
+  const loadStudents = () => {
+    setStudentsLoading(true)
+    setStudentsError('')
+    fetchStudents()
+      .then((data) => setStudents(data))
+      .catch(() => {
+        setStudents([])
+        setStudentsError("Couldn't reach the records server. Check your connection and try again.")
+      })
+      .finally(() => setStudentsLoading(false))
+  }
+
+  useEffect(() => { loadStudents() }, [])
 
   const handleStudentLogin = (e) => {
     e.preventDefault()
+    if (studentsError) {
+      setError("Can't verify Student IDs right now — the records server is unreachable. Try Retry below.")
+      return
+    }
     const student = students.find((s) => s.studentId === studentId.trim())
     if (!student) {
       setError('No student record matches that ID. Try one of the sample IDs below.')
@@ -81,9 +97,27 @@ export default function Landing() {
               <button type="submit" className="w-full py-2.5 rounded bg-ink text-paper font-medium text-sm hover:bg-ink-light transition-colors">
                 Enter portal
               </button>
-              <p className="text-[11px] text-slate font-mono">
-                Sample IDs: {students.map((s) => s.studentId).join(', ') || 'loading…'}
-              </p>
+
+              {studentsLoading && (
+                <p className="text-[11px] text-slate font-mono">Loading sample IDs…</p>
+              )}
+
+              {!studentsLoading && studentsError && (
+                <p className="text-[11px] text-seal font-mono">
+                  {studentsError}{' '}
+                  <button type="button" onClick={loadStudents} className="underline hover:text-ink">
+                    Retry
+                  </button>
+                </p>
+              )}
+
+              {!studentsLoading && !studentsError && (
+                <p className="text-[11px] text-slate font-mono">
+                  {students.length > 0
+                    ? `Sample IDs: ${students.map((s) => s.studentId).join(', ')}`
+                    : 'No sample students found on the server yet.'}
+                </p>
+              )}
             </form>
           ) : (
             <form onSubmit={handleAdminLogin} className="space-y-4">

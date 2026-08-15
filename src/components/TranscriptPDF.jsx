@@ -9,6 +9,7 @@ export default function TranscriptPDF({ request }) {
   const [summary, setSummary] = useState({ totalCredits: 0, gpa: 0, courseCount: 0 })
   const [loadError, setLoadError] = useState('')
   const [loadingResults, setLoadingResults] = useState(true)
+  const [downloadError, setDownloadError] = useState('')
 
   // The transcript's grades table comes from the student's academic record,
   // not the request itself — fetch it as soon as an approved request card
@@ -37,6 +38,7 @@ export default function TranscriptPDF({ request }) {
   const handleDownload = async () => {
     if (!printRef.current) return
     setGenerating(true)
+    setDownloadError('')
     try {
       await html2pdf()
         .set({
@@ -48,6 +50,9 @@ export default function TranscriptPDF({ request }) {
         })
         .from(printRef.current)
         .save()
+    } catch (err) {
+      console.error('Transcript PDF generation failed:', err)
+      setDownloadError('Something went wrong preparing the PDF. Please try again.')
     } finally {
       setGenerating(false)
     }
@@ -58,14 +63,17 @@ export default function TranscriptPDF({ request }) {
 
   return (
     <>
-      <button
-        onClick={handleDownload}
-        disabled={generating || loadingResults}
-        title={loadError || undefined}
-        className="px-3 py-1.5 rounded bg-ink text-paper text-xs font-medium hover:bg-ink-light transition-colors disabled:opacity-50"
-      >
-        {generating ? 'Preparing PDF…' : loadingResults ? 'Loading record…' : 'Download PDF'}
-      </button>
+      <div className="inline-flex flex-col items-start gap-1">
+        <button
+          onClick={handleDownload}
+          disabled={generating || loadingResults}
+          title={loadError || undefined}
+          className="px-3 py-1.5 rounded bg-ink text-paper text-xs font-medium hover:bg-ink-light transition-colors disabled:opacity-50"
+        >
+          {generating ? 'Preparing PDF…' : loadingResults ? 'Loading record…' : 'Download PDF'}
+        </button>
+        {downloadError && <p className="text-xs text-seal">{downloadError}</p>}
+      </div>
 
       {/* Off-screen printable transcript, captured by html2pdf */}
       <div className="fixed -left-[9999px] top-0" aria-hidden="true">
@@ -128,7 +136,7 @@ export default function TranscriptPDF({ request }) {
                   </thead>
                   <tbody>
                     {courses.map((c) => (
-                      <tr key={c.id} className="border-b border-gray-300">
+                      <tr key={c.id} className="border-b border-[#d1d5db]">
                         <td className="py-1 pr-2 font-mono">{c.courseCode}</td>
                         <td className="py-1 pr-2">{c.courseTitle}</td>
                         <td className="py-1 pr-2 text-right">{c.creditHours.toFixed(0)}</td>
@@ -170,7 +178,7 @@ export default function TranscriptPDF({ request }) {
 
 function Row({ label, value }) {
   return (
-    <tr className="border-b border-gray-300">
+    <tr className="border-b border-[#d1d5db]">
       <td className="py-2 pr-4 font-semibold w-1/3 align-top">{label}</td>
       <td className="py-2 align-top">{value}</td>
     </tr>
